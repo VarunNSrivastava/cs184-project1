@@ -34,8 +34,8 @@
 <h2 align="middle">Overview</h2>
 <p>
 In this project, as per CS 184 guidelines, I have implemented an engine that can render SVG files. In particular, supported SVG specifications in this
-  implementation include points, lines, textured triangles, homogenous transforms, and more. Via a GUI, the user can switch between sampling methods. Therefore,
-  Mipmaps, linear interpolation, and even tri-linear interpolation are supported.
+  implementation include points, lines, textured triangles, homogenous transforms, and more. Additionally, various sampling methods are implemented, so
+  Mipmaps, (bi)-linear interpolation, and tri-linear interpolation are supported.
 
 </p>
 
@@ -45,7 +45,12 @@ In this project, as per CS 184 guidelines, I have implemented an engine that can
 
 <p> For the naive triangle rasterization algorithm, we simply loop through each pixel in the bounding box determined by a triangle's vertices.
   Using three linear equations, we check if a given pixel is inside all three sides of the triangle. In practice, this implementation was done
-  by creating a custom struct, "BaryTriangle" for each triangle, which reduced the number of calculations needed to render a given triangle.
+  by creating a custom struct, <b>BaryTriangle</b> for each triangle, which reduced the number of calculations needed to render a given triangle.
+  In particular, the struct had simple methods and constants saved to check if a given point was inside the bounds of the triangle, and later, to 
+  perform baycentric coordinate calculations.
+
+    <img src="images/basic-test4-1.png" align="middle" width="800px"/>
+    <figcaption align="middle">Rendering happy little triangles</figcaption>
 
 <h3 align="middle">Part 2: Antialiasing triangles</h3>
   Supersampling, e.g. sampling a given pixel at multiple locations, can smooth harsh edges to create a blurring effect. In general, this reduces
@@ -53,28 +58,39 @@ In this project, as per CS 184 guidelines, I have implemented an engine that can
   upscaled vector down. In practice, supersampling in this way uses excess in memory in proportion to our supersampling factor, however is fairly
   computationally efficient as only a single pass on the image is needed in the downsample.
   <br> All changes made were as detailed in the specs; in particular, <b>sample_buffer</b> of the upscaled image was kept, which was later reduced to the
-  <b>frame_buffer</b>. Here are some example photos:
+  <b>frame_buffer</b>. In the below images, view the top right corner to see a zoomed-in version of certain alias artifacts at different sampling rates.
 
 <div align="middle">
   <table style="width=100%">
+
     <tr>
       <td>
-        <img src="images/basic-test4-1.png" align="middle" width="400px"/>
+        <img src="images/basic-test4-1.png" align="middle" width="800px"/>
         <figcaption align="middle">No supersampling: alias artifacts.</figcaption>
       </td>
+
+    </tr>
+    <br>
+    <br>
+    <tr>
+
       <td>
-        <img src="images/basic-test4-4.png" align="middle" width="400px"/>
+        <img src="images/basic-test4-4.png" align="middle" width="800px"/>
         <figcaption align="middle">Sample rate of 4.</figcaption>
       </td>
     </tr>
     <br>
+    <br>
+
     <tr>
       <td>
-        <img src="images/basic-test4-16.png" align="middle" width="400px"/>
+        <img src="images/basic-test4-16.png" align="middle" width="800px"/>
         <figcaption align="middle">Sample rate of 16.</figcaption>
       </td>
 
     </tr>
+
+
   </table>
 </div>
 
@@ -83,45 +99,48 @@ In this project, as per CS 184 guidelines, I have implemented an engine that can
 <h3 align="middle">Part 3: Transforms</h3>
 Homogenous transformations using 3x3 matrices was also implemented. As an example, here is a little robot made with basic
   primitives and transformations. The robot is made to look as if he is walking, with opposite arms and legs extended
-  toward the camera:
+  toward the camera: <br>
 
-  <img src="images/my_robot.png" align="middle" width="400px"/>
+  <img src="images/my_robot.png" align="middle" width="600px"/>
 
 <h2 align="middle">Section II: Sampling</h2>
 
 <h3 align="middle">Part 4: Barycentric coordinates</h3>
   Barycentric is simply expressing any point in a plane relative to the coordinates of a triangle. Here is an image I found
-  online:
+  online: <br>
   <img src="images/bary.png" align="middle" width="400px"/>
   <figcaption align="middle">credit to girlsangle.wordpress.com</figcaption>
+  <br><br>
+
   Here is the render of an svg with a triangle smoothly interpolating between three colors using barycentric coordinates:
   <img src="images/tri.png" align="middle" width="400px"/>
 
-
 <h3 align="middle">Part 5: "Pixel sampling" for texture mapping</h3>
 We need some way to texture an object using a png. We do this by sampling the png. We can do this naively, by trying to map
-  a given pixel to its closest neighbor in the png, or we can interpolate a bunch (4) neighbors. Here's examples!
+  a given pixel to its closest neighbo sample in the png, or we can interpolate a bunch (4) neighbors. The latter approach 
+  is referred to as "bilinear" sampling. Here's examples!
 
   <div align="middle">
     <table style="width=100%">
       <tr>
         <td>
-          <img src="images/nearest1.png" align="middle" width="400px"/>
+          <img src="images/nearest1.png" align="middle" width="500px"/>
           <figcaption align="middle">Nearest sampling at 1 sample</figcaption>
         </td>
         <td>
-          <img src="images/nearest16.png" align="middle" width="400px"/>
+          <img src="images/nearest16.png" align="middle" width="500px"/>
           <figcaption align="middle">Nearest sampling at 16 samples per pixel</figcaption>
         </td>
       </tr>
       <br>
+      <br>
       <tr>
         <td>
-          <img src="images/bilinear1.png" align="middle" width="400px"/>
+          <img src="images/bilinear1.png" align="middle" width="500px"/>
           <figcaption align="middle">Bilinear at 1</figcaption>
         </td>
         <td>
-          <img src="images/bilinear16.png" align="middle" width="400px"/>
+          <img src="images/bilinear16.png" align="middle" width="500px"/>
           <figcaption align="middle">Bilinear at 16</figcaption>
         </td>
 
@@ -134,35 +153,58 @@ We need some way to texture an object using a png. We do this by sampling the pn
 
 
 
-<p>For implementation of mipmapping, which is a way to alleviate anti aliasing for texture mapping,
-we need to pick a "level" parameter for each pixel. Using the methods described in class, we have the following
-results:</p>
+<p>For implementation of mipmapping, which is a way to alleviate certain aliasing like the moire effect from texture sampling, we need
+  a method to pick which level of the mipmap is sample for a given pixel. We have three approaches:
+  <ol>
+    <li>No mipmapping: e.g. always selecting the "zero"th layer of the mipmap.</li>
+    <li>Nearest level: calculating which layer is most appropriate and sampling from this one.</li>
+    <li>Linear level sampling: sampling between the two closest layers and returning a weighted average of them.</li>
+  </ol>
+</p>
+The first approach does not require storing a mipmap, so requires the least memory, but has no anti-alasing power. The second and third approaches don't 
+require much more memory but require a per-pixel computation. The third approach requires over double the computations of the first since we need
+to sample from two layers. 
+<br>
+<br>
+The level for a given pixel was roughly calculated by measuring its approximate derivative in the <i>x</i> and <i>y</i> directions using its neighbors
+in baycentric coordinates. Roughly speaking, a pixel needs higher resolution if it is very different from its neighbors. Below are some examples:
 
   <div align="middle">
     <table style="width=100%">
       <tr>
         <td>
-          <img src="images/zero_linear.png" align="middle" width="400px"/>
-          <figcaption align="middle">Always zero layer with bilinear sampling</figcaption>
-        </td>
-        <td>
-          <img src="images/zero_nearest.png" align="middle" width="400px"/>
+          <img src="images/zero_nearest.png" align="middle" width="600px"/>
           <figcaption align="middle">Always zero layer with nearest sampling</figcaption>
         </td>
+        <td>
+          <img src="images/zero_linear.png" align="middle" width="600px"/>
+          <figcaption align="middle">Always zero layer with bilinear sampling</figcaption>
+        </td>
+
+
       </tr>
       <br>
+      <br>
+      
       <tr>
         <td>
-          <img src="images/nearest_linear.png" align="middle" width="400px"/>
-          <figcaption align="middle">Nearest layer with linear sampling</figcaption>
-        </td>
-        <td>
-          <img src="images/nearest_nearest.png" align="middle" width="400px"/>
+          <img src="images/nearest_nearest.png" align="middle" width="600px"/>
           <figcaption align="middle">Nearest layer with nearest sampling</figcaption>
         </td>
+        <td>
+          <img src="images/nearest_linear.png" align="middle" width="600px"/>
+          <figcaption align="middle">Nearest layer with bilinear sampling</figcaption>
+        </td>
+
 
       </tr>
     </table>
   </div>
+  <br><br>
+  In fact, these examps are fascinating. The bottom row uses nearest level sampling, and this actually causes a visible vertical divide 
+  in the image. Using linear level sampling actually works very well to alleviate this divide. 
+  <br><br>
+  We observe a strong visible moire effect in the top row, especially in the top left image. This does not disappear in the bottom row entirely,
+  but by the bottom right image, it is virtually gone. 
 </body>
 </html>
