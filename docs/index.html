@@ -1,0 +1,168 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<style>
+  body {
+    padding: 100px;
+    width: 1000px;
+    margin: auto;
+    text-align: left;
+    font-weight: 300;
+    font-family: 'Open Sans', sans-serif;
+    color: #121212;
+  }
+  h1, h2, h3, h4 {
+    font-family: 'Source Sans Pro', sans-serif;
+  }
+</style>
+<title>CS 184 Rasterizer</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link href="https://fonts.googleapis.com/css?family=Open+Sans|Source+Sans+Pro" rel="stylesheet">
+</head>
+
+
+<body>
+
+<h1 align="middle">CS 184: Computer Graphics and Imaging, Spring 2023</h1>
+<h1 align="middle">Project 1: Rasterizer</h1>
+<h2 align="middle">Varun Neal Srivastava, CS 184</h2>
+
+<br><br>
+
+<div>
+
+<h2 align="middle">Overview</h2>
+<p>
+In this project, as per CS 184 guidelines, I have implemented an engine that can render SVG files. In particular, supported SVG specifications in this
+  implementation include points, lines, textured triangles, homogenous transforms, and more. Via a GUI, the user can switch between sampling methods. Therefore,
+  Mipmaps, linear interpolation, and even tri-linear interpolation are supported.
+
+</p>
+
+<h2 align="middle">Section I: Rasterization</h2>
+
+<h3 align="middle">Part 1: Rasterizing single-color triangles</h3>
+
+<p> For the naive triangle rasterization algorithm, we simply loop through each pixel in the bounding box determined by a triangle's vertices.
+  Using three linear equations, we check if a given pixel is inside all three sides of the triangle. In practice, this implementation was done
+  by creating a custom struct, "BaryTriangle" for each triangle, which reduced the number of calculations needed to render a given triangle.
+
+<h3 align="middle">Part 2: Antialiasing triangles</h3>
+  Supersampling, e.g. sampling a given pixel at multiple locations, can smooth harsh edges to create a blurring effect. In general, this reduces
+  aliasing. We implement this in the advised way, which was to sample the given image at an upscaled resolution and then to filter this
+  upscaled vector down. In practice, supersampling in this way uses excess in memory in proportion to our supersampling factor, however is fairly
+  computationally efficient as only a single pass on the image is needed in the downsample.
+  <br> All changes made were as detailed in the specs; in particular, <b>sample_buffer</b> of the upscaled image was kept, which was later reduced to the
+  <b>frame_buffer</b>. Here are some example photos:
+
+<div align="middle">
+  <table style="width=100%">
+    <tr>
+      <td>
+        <img src="images/basic-test4-1.png" align="middle" width="400px"/>
+        <figcaption align="middle">No supersampling: alias artifacts.</figcaption>
+      </td>
+      <td>
+        <img src="images/basic-test4-4.png" align="middle" width="400px"/>
+        <figcaption align="middle">Sample rate of 4.</figcaption>
+      </td>
+    </tr>
+    <br>
+    <tr>
+      <td>
+        <img src="images/basic-test4-16.png" align="middle" width="400px"/>
+        <figcaption align="middle">Sample rate of 16.</figcaption>
+      </td>
+
+    </tr>
+  </table>
+</div>
+
+
+
+<h3 align="middle">Part 3: Transforms</h3>
+Homogenous transformations using 3x3 matrices was also implemented. As an example, here is a little robot made with basic
+  primitives and transformations. The robot is made to look as if he is walking, with opposite arms and legs extended
+  toward the camera:
+
+  <img src="images/my_robot.png" align="middle" width="400px"/>
+
+<h2 align="middle">Section II: Sampling</h2>
+
+<h3 align="middle">Part 4: Barycentric coordinates</h3>
+  Barycentric is simply expressing any point in a plane relative to the coordinates of a triangle. Here is an image I found
+  online:
+  <img src="images/bary.png" align="middle" width="400px"/>
+  <figcaption align="middle">credit to girlsangle.wordpress.com</figcaption>
+  Here is the render of an svg with a triangle smoothly interpolating between three colors using barycentric coordinates:
+  <img src="images/tri.png" align="middle" width="400px"/>
+
+
+<h3 align="middle">Part 5: "Pixel sampling" for texture mapping</h3>
+We need some way to texture an object using a png. We do this by sampling the png. We can do this naively, by trying to map
+  a given pixel to its closest neighbor in the png, or we can interpolate a bunch (4) neighbors. Here's examples!
+
+  <div align="middle">
+    <table style="width=100%">
+      <tr>
+        <td>
+          <img src="images/nearest1.png" align="middle" width="400px"/>
+          <figcaption align="middle">Nearest sampling at 1 sample</figcaption>
+        </td>
+        <td>
+          <img src="images/nearest16.png" align="middle" width="400px"/>
+          <figcaption align="middle">Nearest sampling at 16 samples per pixel</figcaption>
+        </td>
+      </tr>
+      <br>
+      <tr>
+        <td>
+          <img src="images/bilinear1.png" align="middle" width="400px"/>
+          <figcaption align="middle">Bilinear at 1</figcaption>
+        </td>
+        <td>
+          <img src="images/bilinear16.png" align="middle" width="400px"/>
+          <figcaption align="middle">Bilinear at 16</figcaption>
+        </td>
+
+      </tr>
+    </table>
+  </div>
+
+
+<h3 align="middle">Part 6: "Level sampling" with mipmaps for texture mapping</h3>
+
+
+
+<p>For implementation of mipmapping, which is a way to alleviate anti aliasing for texture mapping,
+we need to pick a "level" parameter for each pixel. Using the methods described in class, we have the following
+results:</p>
+
+  <div align="middle">
+    <table style="width=100%">
+      <tr>
+        <td>
+          <img src="images/zero_linear.png" align="middle" width="400px"/>
+          <figcaption align="middle">Always zero layer with bilinear sampling</figcaption>
+        </td>
+        <td>
+          <img src="images/zero_nearest.png" align="middle" width="400px"/>
+          <figcaption align="middle">Always zero layer with nearest sampling</figcaption>
+        </td>
+      </tr>
+      <br>
+      <tr>
+        <td>
+          <img src="images/nearest_linear.png" align="middle" width="400px"/>
+          <figcaption align="middle">Nearest layer with linear sampling</figcaption>
+        </td>
+        <td>
+          <img src="images/nearest_nearest.png" align="middle" width="400px"/>
+          <figcaption align="middle">Nearest layer with nearest sampling</figcaption>
+        </td>
+
+      </tr>
+    </table>
+  </div>
+</body>
+</html>
